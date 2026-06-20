@@ -1,10 +1,11 @@
+# tracker/tests.py
+from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
-
-from users.models import User
 from .models import Habit
 
+User = get_user_model()
 
 
 class HabitAPITestCase(APITestCase):
@@ -17,7 +18,7 @@ class HabitAPITestCase(APITestCase):
         self.user2 = User.objects.create_user(
             email='user2@test.com',
             password='testpass123',
-            tg_chat_id='67890'  # Добавил chat_id для второго пользователя
+            tg_chat_id='67890'
         )
         self.client = APIClient()
         self.client.force_authenticate(user=self.user1)
@@ -40,10 +41,12 @@ class HabitAPITestCase(APITestCase):
         """Тест получения списка своих привычек с пагинацией"""
         for i in range(6):
             self.create_habit(self.user1, action=f'Habit {i}')
-        url = reverse('habit-list')
+
+        # Используем namespace 'tracker:'
+        url = reverse('tracker:habit-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 5)  # Пагинация по 5
+        self.assertEqual(len(response.data['results']), 5)
         self.assertEqual(response.data['count'], 6)
 
     def test_list_public_habits(self):
@@ -52,7 +55,8 @@ class HabitAPITestCase(APITestCase):
         self.create_habit(self.user1, action='Private', is_public=False)
         self.create_habit(self.user2, action='Public 2', is_public=True)
 
-        url = reverse('public-habits')  # Убедитесь, что URL существует
+        # Используем namespace 'tracker:'
+        url = reverse('tracker:public-habits')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data['results']), 2)
@@ -62,7 +66,7 @@ class HabitAPITestCase(APITestCase):
 
     def test_create_habit_valid(self):
         """Тест создания корректной привычки"""
-        url = reverse('habit-list')
+        url = reverse('tracker:habit-list')
         data = {
             'place': 'Office',
             'time': '14:30:00',
@@ -82,12 +86,12 @@ class HabitAPITestCase(APITestCase):
 
     def test_create_habit_invalid_execution_time(self):
         """Тест: время выполнения не должно превышать 120 секунд"""
-        url = reverse('habit-list')
+        url = reverse('tracker:habit-list')
         data = {
             'place': 'Office',
             'time': '14:30:00',
             'action': 'Exercise',
-            'execution_time': 150,  # > 120
+            'execution_time': 150,
             'periodicity': 1,
             'reward': 'Coffee'
         }
@@ -97,13 +101,13 @@ class HabitAPITestCase(APITestCase):
 
     def test_create_habit_invalid_periodicity(self):
         """Тест: периодичность должна быть от 1 до 7"""
-        url = reverse('habit-list')
+        url = reverse('tracker:habit-list')
         data = {
             'place': 'Office',
             'time': '14:30:00',
             'action': 'Exercise',
             'execution_time': 60,
-            'periodicity': 8,  # > 7
+            'periodicity': 8,
             'reward': 'Coffee'
         }
         response = self.client.post(url, data, format='json')
@@ -113,7 +117,7 @@ class HabitAPITestCase(APITestCase):
     def test_create_habit_with_reward_and_related_habit(self):
         """Тест: нельзя одновременно указывать reward и related_habit"""
         pleasant = self.create_habit(self.user1, action='Pleasant', is_pleasant=True)
-        url = reverse('habit-list')
+        url = reverse('tracker:habit-list')
         data = {
             'place': 'Office',
             'time': '14:30:00',
@@ -129,7 +133,7 @@ class HabitAPITestCase(APITestCase):
 
     def test_create_pleasant_habit_with_reward(self):
         """Тест: приятная привычка не может иметь reward"""
-        url = reverse('habit-list')
+        url = reverse('tracker:habit-list')
         data = {
             'place': 'Office',
             'time': '14:30:00',
@@ -146,7 +150,7 @@ class HabitAPITestCase(APITestCase):
     def test_create_pleasant_habit_with_related_habit(self):
         """Тест: приятная привычка не может иметь related_habit"""
         other = self.create_habit(self.user1, action='Other')
-        url = reverse('habit-list')
+        url = reverse('tracker:habit-list')
         data = {
             'place': 'Office',
             'time': '14:30:00',
@@ -163,7 +167,7 @@ class HabitAPITestCase(APITestCase):
     def test_create_habit_with_non_pleasant_related_habit(self):
         """Тест: related_habit должна быть приятной привычкой"""
         non_pleasant = self.create_habit(self.user1, action='NonPleasant', is_pleasant=False)
-        url = reverse('habit-list')
+        url = reverse('tracker:habit-list')
         data = {
             'place': 'Office',
             'time': '14:30:00',
@@ -179,7 +183,7 @@ class HabitAPITestCase(APITestCase):
     def test_retrieve_own_habit(self):
         """Тест получения своей привычки"""
         habit = self.create_habit(self.user1)
-        url = reverse('habit-detail', args=[habit.id])
+        url = reverse('tracker:habit-detail', args=[habit.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], habit.id)
@@ -187,7 +191,7 @@ class HabitAPITestCase(APITestCase):
     def test_retrieve_public_habit_other_user(self):
         """Тест получения публичной привычки другого пользователя"""
         habit = self.create_habit(self.user2, action='Other Public', is_public=True)
-        url = reverse('habit-detail', args=[habit.id])
+        url = reverse('tracker:habit-detail', args=[habit.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['action'], 'Other Public')
@@ -195,14 +199,14 @@ class HabitAPITestCase(APITestCase):
     def test_retrieve_private_habit_other_user_forbidden(self):
         """Тест: нельзя получить приватную привычку другого пользователя"""
         habit = self.create_habit(self.user2, action='Private Other', is_public=False)
-        url = reverse('habit-detail', args=[habit.id])
+        url = reverse('tracker:habit-detail', args=[habit.id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_update_own_habit(self):
         """Тест обновления своей привычки"""
         habit = self.create_habit(self.user1, action='Old Action')
-        url = reverse('habit-detail', args=[habit.id])
+        url = reverse('tracker:habit-detail', args=[habit.id])
         data = {'action': 'New Action'}
         response = self.client.patch(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -212,7 +216,7 @@ class HabitAPITestCase(APITestCase):
     def test_update_other_habit_forbidden(self):
         """Тест: нельзя обновлять привычку другого пользователя"""
         habit = self.create_habit(self.user2, action='Other')
-        url = reverse('habit-detail', args=[habit.id])
+        url = reverse('tracker:habit-detail', args=[habit.id])
         data = {'action': 'Changed'}
         response = self.client.patch(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -220,7 +224,7 @@ class HabitAPITestCase(APITestCase):
     def test_delete_own_habit(self):
         """Тест удаления своей привычки"""
         habit = self.create_habit(self.user1)
-        url = reverse('habit-detail', args=[habit.id])
+        url = reverse('tracker:habit-detail', args=[habit.id])
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(Habit.objects.filter(id=habit.id).exists())
@@ -228,20 +232,20 @@ class HabitAPITestCase(APITestCase):
     def test_delete_other_habit_forbidden(self):
         """Тест: нельзя удалять привычку другого пользователя"""
         habit = self.create_habit(self.user2)
-        url = reverse('habit-detail', args=[habit.id])
+        url = reverse('tracker:habit-detail', args=[habit.id])
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_unauthenticated_access(self):
         """Тест доступа без аутентификации"""
         self.client.logout()
-        url = reverse('habit-list')
+        url = reverse('tracker:habit-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_public_habits_unauthenticated(self):
         """Тест: публичные привычки доступны без аутентификации"""
         self.client.logout()
-        url = reverse('public-habits')
+        url = reverse('tracker:public-habits')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
