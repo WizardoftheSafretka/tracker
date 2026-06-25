@@ -1,0 +1,16 @@
+from celery import shared_task
+from django.utils import timezone
+
+from tracker.models import Habit
+from tracker.services import send_telegram_message
+
+
+@shared_task
+def send_notification():
+    current_time = timezone.now().time()
+    habits_list = Habit.objects.filter(time=current_time)
+    for habit in habits_list:
+        user = habit.user
+        if user.tg_chat_id:
+            message = f"{user.email} выполните {habit.action} в {habit.place} в {habit.time}!"
+            send_telegram_message(user.tg_chat_id, message)
