@@ -2,35 +2,56 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop, feature/coursework ]
-  pull_request:
     branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   test-and-lint:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pytest pytest-django coverage
           pip install -r requirements.txt
+
       - name: Lint with flake8
         run: flake8 . --count --max-complexity=10 --max-line-length=127 --statistics --exclude=*/migrations/*,*/__init__.py
+
       - name: Run tests with coverage
         run: |
           coverage run --source='.' manage.py test
           coverage report --fail-under=80
         env:
-          DB_NAME: test
-          DB_USER: test
-          DB_PASSWORD: test
+          DB_NAME: test_db
+          DB_USER: postgres
+          DB_PASSWORD: postgres
           DB_HOST: localhost
+          DB_PORT: 5432
           SECRET_KEY: test-secret-key
           DEBUG: 1
 
@@ -49,9 +70,9 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Build and push Docker images
         run: |
-          docker compose -f docker-compose.prod.yml build
-          docker tag tracker_backend:latest ${{ secrets.DOCKER_USERNAME }}/tracker_backend:latest
-          docker tag tracker_nginx:latest ${{ secrets.DOCKER_USERNAME }}/tracker_nginx:latest
+          docker-compose -f docker-compose.prod.yml build
+          docker tag tracker_backend_prod:latest ${{ secrets.DOCKER_USERNAME }}/tracker_backend:latest
+          docker tag tracker_nginx_prod:latest ${{ secrets.DOCKER_USERNAME }}/tracker_nginx:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/tracker_backend:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/tracker_nginx:latest
 
@@ -71,13 +92,13 @@ jobs:
         run: |
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             cd /opt/tracker
-            docker compose -f docker-compose.prod.yml down
+            docker-compose -f docker-compose.prod.yml down
             docker system prune -f
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml up -d
             sleep 10
-            docker compose -f docker-compose.prod.yml exec backend python manage.py migrate
-            docker compose -f docker-compose.prod.yml exec backend python manage.py collectstatic --noinput
+            docker-compose -f docker-compose.prod.yml exec backend python manage.py migrate
+            docker-compose -f docker-compose.prod.yml exec backend python manage.py collectstatic --noinput
           EOF
 
   health-check:
