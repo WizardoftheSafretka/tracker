@@ -6,12 +6,9 @@ services:
     container_name: tracker_db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
-    ports:
-      - "5432:5432"
+    env_file:
+      - .env
+    restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 10s
@@ -21,8 +18,9 @@ services:
   redis:
     image: redis:7-alpine
     container_name: tracker_redis
-    ports:
-      - "6379:6379"
+    env_file:
+      - .env
+    restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -41,23 +39,14 @@ services:
       - media_volume:/app/media
     ports:
       - "8000:8000"
-    environment:  # <-- ИСПРАВЛЕНО: 4 пробела
-      - DEBUG=1
-      - DB_NAME=tracker
-      - DB_USER=postgres
-      - DB_PASSWORD=G4t5a6Gta
-      - DB_HOST=db
-      - DB_PORT=5432
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=m@p_u)3e56#p_0(x8=@ic1cx7$m-ad&zpky-x17t+luo%$6)6q
-      - EMAIL_PASSWORD=lutmvuqzzuhdpgqa
-      - TELEGRAM_TOKEN=8596404560:AAEWzrxWzHz7ssm1uArzUqnnTdQbDq3XB_4
-      - ALLOWED_HOSTS=localhost,127.0.0.1,192.168.1.100,89.169.170.83
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: always
 
   celery:
     build:
@@ -67,20 +56,14 @@ services:
     command: celery -A config worker --loglevel=info
     volumes:
       - .:/app
-    environment:  # <-- ИСПРАВЛЕНО: 4 пробела
-      - DEBUG=1
-      - DB_NAME=tracker
-      - DB_USER=postgres
-      - DB_PASSWORD=G4t5a6Gta
-      - DB_HOST=db
-      - DB_PORT=5432
-      - REDIS_URL=redis://redis:6379/0
-      - TELEGRAM_TOKEN=8596404560:AAEWzrxWzHz7ssm1uArzUqnnTdQbDq3XB_4
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: always
 
   celery-beat:
     build:
@@ -90,16 +73,11 @@ services:
     command: celery -A config beat --loglevel=info
     volumes:
       - .:/app
-    environment:
-      - DEBUG=1
-      - DB_NAME=tracker
-      - DB_USER=postgres
-      - DB_PASSWORD=G4t5a6Gta
-      - DB_HOST=db
-      - DB_PORT=5432
-      - REDIS_URL=redis://redis:6379/0
+    env_file:
+      - .env
     depends_on:
       - celery
+    restart: always
 
   nginx:
     build:
@@ -113,6 +91,7 @@ services:
       - media_volume:/media
     depends_on:
       - backend
+    restart: always
 
 volumes:
   postgres_data:

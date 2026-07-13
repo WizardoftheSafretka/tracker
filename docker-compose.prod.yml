@@ -37,17 +37,17 @@ services:
       - static_volume_prod:/app/static
       - media_volume_prod:/app/media
     environment:
-      - DEBUG=0
+      - DEBUG=${DEBUG}
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - REDIS_URL=redis://redis:6379/0
-      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
-      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - REDIS_URL=${REDIS_URL}
       - SECRET_KEY=${SECRET_KEY}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
     depends_on:
       db:
         condition: service_healthy
@@ -61,13 +61,16 @@ services:
       dockerfile: Dockerfile
     container_name: tracker_celery_prod
     command: celery -A config worker --loglevel=info --concurrency=4
+    volumes:
+      - .:/app
     environment:
+      - DEBUG=${DEBUG}
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - REDIS_URL=redis://redis:6379/0
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - REDIS_URL=${REDIS_URL}
       - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
     depends_on:
       db:
@@ -82,13 +85,16 @@ services:
       dockerfile: Dockerfile
     container_name: tracker_celery_beat_prod
     command: celery -A config beat --loglevel=info
+    volumes:
+      - .:/app
     environment:
+      - DEBUG=${DEBUG}
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=db
-      - DB_PORT=5432
-      - REDIS_URL=redis://redis:6379/0
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - REDIS_URL=${REDIS_URL}
     depends_on:
       - celery
     restart: always
@@ -99,8 +105,7 @@ services:
       dockerfile: Dockerfile
     container_name: tracker_nginx_prod
     ports:
-      - "80:80"
-      - "443:443"  # Если используете HTTPS
+      - "8080:80"
     volumes:
       - static_volume_prod:/static
       - media_volume_prod:/media
