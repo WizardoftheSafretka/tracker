@@ -12,9 +12,9 @@ class RegisterView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         validated_data = serializer.validated_data
-        email = validated_data['email']
-        password = validated_data['password']
-        tg_chat_id = validated_data.get('tg_chat_id')
+        email = validated_data["email"]
+        password = validated_data["password"]
+        tg_chat_id = validated_data.get("tg_chat_id")
 
         user = User(email=email, tg_chat_id=tg_chat_id)
         user.set_password(password)

@@ -7,6 +7,6 @@ from tracker.validators import validate_habit_data
 class HabitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Habit
-        fields = '__all__'
-        read_only_fields = ('user',)
+        fields = "__all__"
+        read_only_fields = ("user",)
         validators = [validate_habit_data]
