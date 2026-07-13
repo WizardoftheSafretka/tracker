@@ -74,7 +74,7 @@ jobs:
 
       - name: Build and push Docker images
         run: |
-          docker-compose -f docker-compose.prod.yml build
+          docker compose -f docker-compose.prod.yml build
           docker tag tracker_backend_prod:latest ${{ secrets.DOCKER_USERNAME }}/tracker_backend:latest
           docker tag tracker_nginx_prod:latest ${{ secrets.DOCKER_USERNAME }}/tracker_nginx:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/tracker_backend:latest
