@@ -32,7 +32,10 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: tracker_backend_prod
-    command: python manage.py collectstatic --no-input && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4
+    command: >
+      sh -c "mkdir -p /app/static /app/media &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4"
     volumes:
       - static_volume_prod:/app/static
       - media_volume_prod:/app/media
