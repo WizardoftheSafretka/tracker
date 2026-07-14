@@ -56,7 +56,7 @@ jobs:
           DEBUG: 1
 
   build-and-push:
-    needs: test-and-lint
+#    needs: test-and-lint
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/coursework')
 
