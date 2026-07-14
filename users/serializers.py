@@ -8,9 +8,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'password', 'tg_chat_id')
+        fields = ("email", "password", "tg_chat_id")
         extra_kwargs = {
-            'password': {'write_only': True},
-            'email': {'required': True},
-            'tg_chat_id': {'required': False, 'allow_blank': True}
+            "password": {"write_only": True},
+            "email": {"required": True},
+            "tg_chat_id": {"required": False, "allow_blank": True},
         }

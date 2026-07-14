@@ -1,34 +1,64 @@
-# Проект 
+# Трекер привычек
 
-Проект "Трекер привычек"
+## Описание
+Веб-приложение для отслеживания привычек с уведомлениями в Telegram.
 
-## Описание:
+## Технологии
+- Django 5.1
+- PostgreSQL
+- Redis
+- Celery
+- Nginx
+- Docker
 
-Проект "Трекер привычек" - это web-приложение для отслеживания привычек
+## Локальный запуск
 
-## Установка:
+### Требования
+- Docker и Docker Compose
+- Git
 
+### Установка и запуск
 1. Клонируйте репозиторий:
-```
-https://github.com/WizardoftheSafretka/tracker.git
-```
+git clone https://github.com/yourusername/tracker.git
+cd tracker
 
-2. Установите зависимости:
-```
-pip install -r requirements.txt
-```
+2. Настройте переменные окружения:
+cp .env.example .env
+3. Запустите проект:
+docker compose up -d
+4. Примените миграции:
+docker compose exec backend python manage.py migrate
+5. Создайте суперпользователя:
+docker compose exec backend python manage.py createsuperuser
 
-## Тестирование:
+Доступ к приложению
+API: http://localhost:8000
 
-Для тестирования используется библиотека pytest.
-Тесты стоит запускать командой  pytest из корневой директории проекта.
-Тестовое покрытие составляет более 80%.
+Админка: http://localhost:8000/admin
 
-## Использование:
+Swagger: http://localhost:8000/swagger/
 
-1. Введите комнду python manage.py runserver
+CI/CD
+При пуше в ветку main автоматически:
 
+Запускаются тесты и линтинг
 
-## Автор:
+Собираются Docker-образы
 
-Ерихов Максим aka Wizard
+Выполняется деплой на сервер
+
+Структура сервисов
+backend — Django приложение
+
+db — PostgreSQL
+
+redis — Redis
+
+celery — Celery worker
+
+celery-beat — Celery beat
+
+nginx — Веб-сервер
+
+Автор
+Wizard
